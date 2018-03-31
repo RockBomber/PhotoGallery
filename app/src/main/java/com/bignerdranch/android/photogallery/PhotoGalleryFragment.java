@@ -5,6 +5,8 @@ import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
+import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,7 +20,10 @@ public class PhotoGalleryFragment extends Fragment {
     private static final String TAG = "PhotoGalleryFragment";
 
     private RecyclerView mPhotoRecyclerView;
-    private List<GalleryItem> mItems = new ArrayList<>();
+    private int mCurrentPage = 1;
+    private int mTotalPages = 1;
+    private GridLayoutManager mLayoutManager;
+    private PhotoAdapter mAdapter;
 
     public static PhotoGalleryFragment newInstance() {
         return new PhotoGalleryFragment();
@@ -36,15 +41,38 @@ public class PhotoGalleryFragment extends Fragment {
         View v = inflater.inflate(R.layout.fragment_photo_gallery, container, false);
 
         mPhotoRecyclerView = (RecyclerView) v.findViewById(R.id.photo_recycler_view);
-        mPhotoRecyclerView.setLayoutManager(new GridLayoutManager(getActivity(), 3));
+        mLayoutManager = new GridLayoutManager(getActivity(), 3);
+        mPhotoRecyclerView.setLayoutManager(mLayoutManager);
+        mPhotoRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+                super.onScrollStateChanged(recyclerView, newState);
+            }
+
+            @Override
+            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+                int visibleItemCount = mLayoutManager.getChildCount();
+                int totalItemCount = mLayoutManager.getItemCount();
+                int pastVisiblesItems = mLayoutManager.findFirstVisibleItemPosition();
+                if ( (visibleItemCount + pastVisiblesItems) >= totalItemCount) {
+                    Log.i(TAG, "End of list");
+                    if (mCurrentPage < mTotalPages) {
+                        mCurrentPage += 1;
+                        new FetchItemsTask().execute();
+                    }
+                }
+            }
+        });
 
         setupAdapter();
         return v;
     }
 
     private void setupAdapter() {
+        mAdapter = new PhotoAdapter();
         if (isAdded()) {
-            mPhotoRecyclerView.setAdapter(new PhotoAdapter(mItems));
+            mPhotoRecyclerView.setAdapter(mAdapter);
         }
     }
 
@@ -65,11 +93,7 @@ public class PhotoGalleryFragment extends Fragment {
 
     private class PhotoAdapter extends RecyclerView.Adapter<PhotoHolder> {
 
-        private List<GalleryItem> mGalleryItems;
-
-        public PhotoAdapter(List<GalleryItem> galleryItems) {
-            mGalleryItems = galleryItems;
-        }
+        private List<GalleryItem> mGalleryItems = new ArrayList<>();
 
         @Override
         public PhotoHolder onCreateViewHolder(ViewGroup viewGroup, int viewType) {
@@ -87,20 +111,25 @@ public class PhotoGalleryFragment extends Fragment {
         public int getItemCount() {
             return mGalleryItems.size();
         }
+
+        public void addItems (List<GalleryItem> galleryItems) {
+            mGalleryItems.addAll(galleryItems);
+            notifyDataSetChanged();
+        };
     }
 
 
-    private class FetchItemsTask extends AsyncTask<Void, Void, List<GalleryItem>> {
+    private class FetchItemsTask extends AsyncTask<Void, Void, Pair<Integer, List<GalleryItem>>> {
 
         @Override
-        protected List<GalleryItem> doInBackground(Void... params) {
-            return new FlickrFetchr().fetchItems();
+        protected Pair<Integer, List<GalleryItem>> doInBackground(Void... params) {
+            return new FlickrFetchr().fetchItems(mCurrentPage);
         }
 
         @Override
-        protected void onPostExecute(List<GalleryItem> items) {
-            mItems = items;
-            setupAdapter();
+        protected void onPostExecute(Pair<Integer, List<GalleryItem>> pair) {
+            mTotalPages = pair.first;
+            mAdapter.addItems(pair.second);
         }
     }
 

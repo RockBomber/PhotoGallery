@@ -2,6 +2,7 @@ package com.bignerdranch.android.photogallery;
 
 import android.net.Uri;
 import android.util.Log;
+import android.util.Pair;
 
 import com.google.gson.Gson;
 
@@ -46,9 +47,10 @@ public class FlickrFetchr {
         return new String(getUrlBytes(urlSpec));
     }
 
-    public List<GalleryItem> fetchItems() {
+    public Pair<Integer, List<GalleryItem>> fetchItems(int page) {
 
         List<GalleryItem> items = new ArrayList<>();
+        int pages = 1;
 
         try {
             String url = Uri.parse("https://api.flickr.com/services/rest/")
@@ -58,16 +60,18 @@ public class FlickrFetchr {
                     .appendQueryParameter("format", "json")
                     .appendQueryParameter("nojsoncallback", "1")
                     .appendQueryParameter("extras", "url_s")
+                    .appendQueryParameter("page", String.valueOf(page))
                     .build().toString();
             String jsonString = getUrlString(url);
             Log.i(TAG, "Received JSON: " + jsonString);
             Response response = new Gson().fromJson(jsonString, Response.class);
             parseItems(items, response);
+            pages = response.getPhotos().getPages();
         } catch (IOException ioe) {
             Log.e(TAG, "Failed to fetch items", ioe);
         }
 
-        return items;
+        return new Pair<>(pages, items);
     }
 
     private void parseItems(List<GalleryItem> items, Response response) {
