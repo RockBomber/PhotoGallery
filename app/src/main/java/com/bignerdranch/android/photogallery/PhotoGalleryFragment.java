@@ -44,7 +44,7 @@ public class PhotoGalleryFragment extends Fragment {
         @Override
         protected Void doInBackground(Void... params) {
             try {
-                String result = new FlickrFetchr().getUrlString("https://www.bignerdranch.com");
+                String result = new FlickrFetchr().getUrlString("https://api.flickr.com/services/rest/?method=flickr.photos.getRecent&api_key=88dfa6ea37cf036ff8f25d1b9a109720&format=json&nojsoncallback=1");
                 Log.i(TAG, "Fetched contents of URL: " + result);
             } catch (IOException ioe) {
                 Log.e(TAG, "Failed to fetch URL: ", ioe);
