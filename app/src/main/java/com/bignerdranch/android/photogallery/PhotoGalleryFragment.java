@@ -20,6 +20,7 @@ public class PhotoGalleryFragment extends Fragment {
     private static final String TAG = "PhotoGalleryFragment";
 
     private RecyclerView mPhotoRecyclerView;
+    private List<GalleryItem> mItems = new ArrayList<>();
     private int mCurrentPage = 1;
     private int mTotalPages = 1;
     private GridLayoutManager mLayoutManager;
@@ -70,7 +71,7 @@ public class PhotoGalleryFragment extends Fragment {
     }
 
     private void setupAdapter() {
-        mAdapter = new PhotoAdapter();
+        mAdapter = new PhotoAdapter(mItems);
         if (isAdded()) {
             mPhotoRecyclerView.setAdapter(mAdapter);
         }
@@ -93,7 +94,11 @@ public class PhotoGalleryFragment extends Fragment {
 
     private class PhotoAdapter extends RecyclerView.Adapter<PhotoHolder> {
 
-        private List<GalleryItem> mGalleryItems = new ArrayList<>();
+        private List<GalleryItem> mGalleryItems;
+
+        public PhotoAdapter(List<GalleryItem> items) {
+            mGalleryItems = items;
+        }
 
         @Override
         public PhotoHolder onCreateViewHolder(ViewGroup viewGroup, int viewType) {
@@ -129,6 +134,7 @@ public class PhotoGalleryFragment extends Fragment {
         @Override
         protected void onPostExecute(Pair<Integer, List<GalleryItem>> pair) {
             mTotalPages = pair.first;
+            mItems.addAll(pair.second);
             mAdapter.addItems(pair.second);
         }
     }
