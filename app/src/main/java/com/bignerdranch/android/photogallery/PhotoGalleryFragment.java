@@ -10,6 +10,7 @@ import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.TextView;
 
 import java.util.ArrayList;
@@ -18,6 +19,7 @@ import java.util.List;
 public class PhotoGalleryFragment extends Fragment {
 
     private static final String TAG = "PhotoGalleryFragment";
+    private static final int IMAGE_WIDTH = 360;
 
     private RecyclerView mPhotoRecyclerView;
     private List<GalleryItem> mItems = new ArrayList<>();
@@ -42,7 +44,7 @@ public class PhotoGalleryFragment extends Fragment {
         View v = inflater.inflate(R.layout.fragment_photo_gallery, container, false);
 
         mPhotoRecyclerView = (RecyclerView) v.findViewById(R.id.photo_recycler_view);
-        mLayoutManager = new GridLayoutManager(getActivity(), 3);
+        mLayoutManager = new GridLayoutManager(getActivity(), 1);
         mPhotoRecyclerView.setLayoutManager(mLayoutManager);
         mPhotoRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
@@ -63,6 +65,16 @@ public class PhotoGalleryFragment extends Fragment {
                         new FetchItemsTask().execute();
                     }
                 }
+            }
+        });
+        mPhotoRecyclerView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                int width = mPhotoRecyclerView.getWidth();
+                int spanCount = width / IMAGE_WIDTH;
+                Log.i(TAG, "PhotoRecyclerView width: " + width);
+                Log.i(TAG, "Span count: " + spanCount);
+                mLayoutManager.setSpanCount(spanCount);
             }
         });
 
