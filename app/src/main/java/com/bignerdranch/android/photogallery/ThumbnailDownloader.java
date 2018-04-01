@@ -9,6 +9,7 @@ import android.support.v4.util.LruCache;
 import android.util.Log;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -25,7 +26,6 @@ public class ThumbnailDownloader<T> extends HandlerThread {
     private ThumbnailDownloaderListener<T> mThumbnailDownloaderListener;
     private LruCache<String, Bitmap> mCache;
     private Handler mPreloadHandler;
-    private ConcurrentMap<Integer, String> mPreloadMap = new ConcurrentHashMap<>();
 
     public interface ThumbnailDownloaderListener<T> {
         void onThumbnailDownloaded(T target, Bitmap thumbnail);
@@ -59,9 +59,9 @@ public class ThumbnailDownloader<T> extends HandlerThread {
             @Override
             public void handleMessage(Message msg) {
                 if (msg.what == MESSAGE_PRELOAD) {
-                    Integer position = (Integer) msg.obj;
-                    Log.i(TAG, "Got a request for preload URL: " + mPreloadMap.get(position) + " on position " + position);
-                    handlePreload(position);
+                    String url = (String) msg.obj;
+                    Log.i(TAG, "Got a request for preload URL: " + url);
+                    handlePreload(url);
                 }
             }
         };
@@ -84,23 +84,17 @@ public class ThumbnailDownloader<T> extends HandlerThread {
         }
     }
 
-    public void queuePreload(Integer position, String url) {
-        Log.i(TAG, "Got a URL for preload: " + url + " on position " + position);
-
-        if (url == null) {
-            mPreloadMap.remove(position);
-        } else {
-            mPreloadMap.put(position, url);
-            mPreloadHandler.obtainMessage(MESSAGE_PRELOAD, position).sendToTarget();
+    public void queuePreload(List<GalleryItem> items) {
+        for (GalleryItem item : items) {
+            mPreloadHandler.obtainMessage(MESSAGE_PRELOAD, item.getUrl()).sendToTarget();
+            Log.i(TAG, "Got a URL for preload: " + item.getUrl());
         }
-
     }
 
     public void clearQueue() {
         mRequestHandler.removeMessages(MESSAGE_DOWNLOAD);
         mRequestMap.clear();
         mPreloadHandler.removeMessages(MESSAGE_PRELOAD);
-        mPreloadMap.clear();
     }
 
     private void handleRequest(final T target) {
@@ -137,10 +131,8 @@ public class ThumbnailDownloader<T> extends HandlerThread {
         }
     }
 
-    private void handlePreload(final Integer position) {
+    private void handlePreload(String url) {
         try {
-            final String url = mPreloadMap.get(position);
-
             if (url == null) {
                 return;
             }
@@ -149,7 +141,7 @@ public class ThumbnailDownloader<T> extends HandlerThread {
             if (mCache.get(url) == null) {
                 byte[] bitmapBytes = new FlickrFetchr().getUrlBytes(url);
                 bitmap = BitmapFactory.decodeByteArray(bitmapBytes, 0, bitmapBytes.length);
-                Log.i(TAG, "Preloaded Bitmap created for position " + position);
+                Log.i(TAG, "Preloaded Bitmap created");
                 mCache.put(url, bitmap);
             }
         } catch (IOException ioe) {

@@ -116,10 +116,13 @@ public class PhotoGalleryFragment extends Fragment {
             Drawable placeHolder = getResources().getDrawable(R.drawable.bill_up_close);
             photoHolder.bindDrawable(placeHolder);
             mThumbnailDownloader.queueThumbnail(photoHolder, galleryItem.getUrl());
-            for (int i = position + 1; i <= position + 10 && i < mGalleryItems.size(); i++) {
-                Log.i(TAG, "Request for preload bitmap on position " + i);
-                mThumbnailDownloader.queuePreload(i, mGalleryItems.get(i).getUrl());
-            }
+
+            int first = position + 1;
+            int last = first + 10 <= mGalleryItems.size() ? first + 10 : mGalleryItems.size();
+            Log.i(TAG, "First position: " + first);
+            Log.i(TAG, "Last position: " + last);
+            List<GalleryItem> forPreload = mGalleryItems.subList(first, last);
+            mThumbnailDownloader.queuePreload(forPreload);
         }
 
         @Override
