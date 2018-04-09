@@ -23,6 +23,8 @@ public class PollService extends IntentService {
     // 60 seconds
     private static final long POLL_INTERVAL_MS = TimeUnit.MINUTES.toMillis(1);
 
+    public static final String ACTION_SHOW_NOTIFICATION = "com.bignerdranch.android.photogallery.SHOW_NOTIFICATION";
+
     public static Intent newIntent(Context context) {
         return new Intent(context, PollService.class);
     }
@@ -91,6 +93,8 @@ public class PollService extends IntentService {
 
             NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
             notificationManager.notify(0, notification);
+
+            sendBroadcast(new Intent(ACTION_SHOW_NOTIFICATION));
         }
 
         QueryPreferences.setLastResultId(this, resultId);
